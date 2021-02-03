@@ -1,0 +1,8 @@
+[
+  {"symbol":"BTCUSDT","base":"BTC","quote":"USDT","name":"Bitcoin"},
+  {"symbol":"ETHUSDT","base":"ETH","quote":"USDT","name":"Ethereum"},
+  {"symbol":"DOTUSDT","base":"DOT","quote":"USDT","name":"Polkadot"},
+  {"symbol":"BTCEUR","base":"BTC","quote":"EUR","name":"Bitcoin"},
+  {"symbol":"ETHEUR","base":"ETH","quote":"EUR","name":"Ethereum"},
+  {"symbol":"DOTEUR","base":"DOT","quote":"EUR","name":"Polkadot"}
+]
