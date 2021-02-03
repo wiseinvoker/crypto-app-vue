@@ -56,7 +56,9 @@ button:focus {
   height: 100%;
   padding-top:60px;
 }
-
+input.qty.form-control {
+  text-align: center;
+}
 .add-btn {
   width:30px;
   height:30px;

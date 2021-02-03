@@ -9,7 +9,10 @@ export default new Vuex.Store({
   state: {
     currencies: localStorage.hasOwnProperty('crypto-currencies-new')? JSON.parse(localStorage.getItem('crypto-currencies-new')) : defaultPair,
     tickers: {},
-    chartData: []
+    chartData: [],
+    suggestionDay: '',
+    suggestionHour: '',
+    suggestionMin: '',
   },
   getters: {
     getSymbolById: state => (symbol) => {
@@ -20,6 +23,15 @@ export default new Vuex.Store({
     }
   },
   mutations: {
+    UPDATE_DAY_SUGGEST: (state, payload) => {
+      state.suggestionDay = payload
+    },
+    UPDATE_HOUR_SUGGEST: (state, payload) => {
+      state.suggestionHour = payload
+    },
+    UPDATE_MIN_SUGGEST: (state, payload) => {
+      state.suggestionMin = payload
+    },
     UPDATE_TICKER: (state, payload) => {
       const tick = state.tickers[payload.symbol]
       payload.pchg = tick ? (payload.price > tick.price? 1 : -1 ) : 1

@@ -1,12 +1,15 @@
 {
-  "name": "vue-crypto-dashboard",
-  "description": "Vue Cryptocurrency Dashboard",
-  "author": "JayeshLab <helloiamjayesh@gmail.com>",
+  "name": "crypto-app-ml",
+  "description": "Cryptocurrency Dashboard with Forecast",
+  "author": "Wise Invoker <grityangel@gmail.com>",
   "version": "0.2.0",
   "license": "MIT",
   "keywords": [
     "crypto",
     "cryptocurrency",
+    "lstm",
+    "forecast",
+    "prediction",
     "dashboard",
     "binance",
     "amchart",
@@ -16,10 +19,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JayeshLab/vue-crypto-dashboard.git"
+    "url": "git+https://github.com/wiseinvoker/crypto-app.git"
   },
   "bugs": {
-    "url": "https://github.com/JayeshLab/vue-crypto-dashboard/issues"
+    "url": "https://github.com/wiseinvoker/crypto-app/issues"
   },
   "scripts": {
     "serve": "vue-cli-service serve",

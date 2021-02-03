@@ -32,10 +32,10 @@
     },
     computed: {
       currency() {
-        // return this.$store.getters.getSymbolById(this.symbol) || {}
+        return this.$store.getters.getSymbolById(this.symbol) || {}
       },
       ticker() {
-        // return this.$store.getters.getTickerById(this.symbol) || {}
+        return this.$store.getters.getTickerById(this.symbol) || {}
       }
     }
   }

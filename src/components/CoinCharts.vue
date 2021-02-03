@@ -11,189 +11,61 @@
 </template>
 <script>
   import 'amcharts3/amcharts/amcharts'
-  // eslint-disable-next-line
   import 'amcharts3/amcharts/serial'
-  // eslint-disable-next-line
   import 'amstock3/amcharts/amstock'
-
-  // var proxyUrl = 'https://cors-anywhere.herokuapp.com/'
+  import 'amcharts3/amcharts/xy'
+  import { mapState } from 'vuex'
+  import store from '../store'
 
   export default {
-    name: 'coin-charts',
+    name: 'coincharts',
     props: ['symbol'],
     data() {
       return {
         chartData: [],
+        lastEpoch: null,
         chart: null,
         interval: '1d',
+        timeInterval: 24 * 60 * 60 * 1000,
         chartLoading: true,
-        // chartType: 'cs',
-        chartType: 'lc',
-        candleStickChartConfig: {
-          "type": "stock",
-          "theme": "light",
-          "dataDateFormat": "YYYY-MM-DD HH",
-          "mouseWheelZoomEnabled": true,
-          "pathToImages": "http://cdn.amcharts.com/lib/3/images/",
-          "categoryAxesSettings": {
-            "minPeriod": "hh"
-          },
-          "dataSets": [{
-            "fieldMappings": [{
-              "fromField": "open",
-              "toField": "open"
-            }, {
-              "fromField": "close",
-              "toField": "close"
-            }, {
-              "fromField": "high",
-              "toField": "high"
-            }, {
-              "fromField": "low",
-              "toField": "low"
-            }, {
-              "fromField": "volume",
-              "toField": "volume"
-            }],
-            "color": "#7f8da9",
-            "dataProvider": this.chartData,
-            "title": this.symbol,
-            "categoryField": "date"
-          }],
-          "panels": [{
-            "title": "Price",
-            "showCategoryAxis": true,
-            "percentHeight": 70,
-            "valueAxes": [{
-              "id": "v1",
-              "dashLength": 5
-            }],
-
-            "categoryAxis": {
-              "dashLength": 5
-            },
-
-            "stockGraphs": [{
-              "type": "candlestick",
-              "id": "g1",
-              "openField": "open",
-              "closeField": "close",
-              "highField": "high",
-              "lowField": "low",
-              "valueField": "close",
-              "lineColor": "#00a928",
-              "fillColors": "#00a928",
-              "negativeLineColor": "#db4c3c",
-              "negativeFillColors": "#db4c3c",
-              "fillAlphas": 1,
-              "useDataSetColors": false,
-              "showBalloon": true,
-              "useNegativeColorIfDown": false,
-              "balloonText": "Open:<b>[[open]]</b><br>Low:<b>[[low]]</b><br>High:<b>[[high]]</b><br>Close:<b>[[close]]</b>",
-            }],
-
-            "stockLegend": {
-              "valueTextRegular": undefined,
-              "periodValueTextComparing": "[[percents.value.close]]%"
-            }
-          },
-            {
-              "title": "Volume",
-              "percentHeight": 30,
-              "marginTop": 1,
-              "showCategoryAxis": true,
-              "valueAxes": [{
-                "dashLength": 5
-              }],
-              "categoryAxis": {
-                "dashLength": 5
-              },
-
-              "stockGraphs": [{
-                "valueField": "volume",
-                "type": "column",
-                "fillColors": '#7f8da9',
-                "showBalloon": true,
-                "fillAlphas": 1
-              }],
-
-              "stockLegend": {
-                "markerType": "none",
-                "markerSize": 0,
-                "labelText": "",
-                "periodValueTextRegular": "[[value.close]]"
+        chartType: 'cs',
+      }
+    },
+    computed: {
+      ...mapState(['tickers', 'suggestionDay'])
+    },
+    watch: {
+      tickers: {
+        immediate: true,
+        deep: true,
+        handler: function (value) {
+          const currentTick = value[this.symbol]
+          let currentTickTime
+          if (this.lastEpoch && currentTick && currentTick['time'] > this.lastEpoch) {
+            if (currentTick['time'] % this.timeInterval < 1000) {
+              if (this.chart && this.chart.dataSets[0]) {
+                let isFound = false
+                // this.chart.dataSets[0].dataProvider
+                currentTickTime = currentTick['time'] - (currentTick['time'] % this.timeInterval)
+                for (var i = 0; i < this.chartData.length; i++) {
+                  if (currentTickTime == this.chartData[i]['time']) {
+                    this.chartData[i]['value'] = currentTick['price']
+                    isFound = true
+                    this.chart.dataSets[0].dataProvider = this.chartData;
+                    this.chart.validateData()
+                    break
+                  }
+                }
+                if (!isFound) {
+                  this.chart.dataSets[0].dataProvider.push({
+                    'date': new Date(currentTick['time']),
+                    'time': currentTick['time'],
+                    'value': currentTick['price']
+                  })
+                  this.chart.validateData()
+                }
               }
             }
-          ],
-          "chartScrollbarSettings": {
-            "graph": "g1",
-            "graphType": "line",
-            "usePeriod": "DD"
-          },
-          "chartCursorSettings": {
-            "valueLineBalloonEnabled": true,
-            "valueLineEnabled": true
-          },
-          "legendSettings": {
-            "useMarkerColorForLabels": true
-          }
-        },
-        lineCartConfig: {
-          "type": "stock",
-          "theme": "light",
-          "dataDateFormat": "YYYY-MM-DD HH",
-          "mouseWheelZoomEnabled": true,
-          "pathToImages": "http://cdn.amcharts.com/lib/3/images/",
-          "categoryAxesSettings": {
-            "minPeriod": "hh"
-          },
-          "dataSets": [{
-            "color": "#00a928",
-            "fieldMappings": [ {
-              "fromField": "value",
-              "toField": "value"
-            } ],
-            "dataProvider": this.chartData,
-            "categoryField": "date"
-          }],
-          "panels": [ {
-            "showCategoryAxis": true,
-            "title": "Price",
-            "stockGraphs": [ {
-              "id": "g1",
-              "valueField": "value",
-              "useDataSetColors": false
-            } ],
-            "stockLegend": {
-              "periodValueTextRegular": "[[value.close]]"
-            }
-          },
-            {
-              "title": "Volume",
-              "percentHeight": 30,
-              "showCategoryAxis": true,
-              "stockGraphs": [ {
-                "valueField": "volume",
-                "type": "column",
-                "showBalloon": false,
-                "fillAlphas": 1
-              } ],
-              "stockLegend": {
-                "periodValueTextRegular": "[[value.close]]"
-              }
-            }
-          ],
-          "chartScrollbarSettings": {
-            "graph": "g1",
-            "graphType": "line",
-            "usePeriod": "DD"
-          },
-          "chartCursorSettings": {
-            "valueLineBalloonEnabled": true,
-            "valueLineEnabled": true
-          },
-          "legendSettings": {
-            "useMarkerColorForLabels": true
           }
         }
       }
@@ -210,198 +82,150 @@
     },
     methods: {
       zoomChart() {
-        if(this.chartData.length > 50){
-          this.chart.scrollbarChart.zoomToIndexes(this.chartData.length - 40, this.chartData.length - 1);
+        if(this.chartData.length > 30){
+          this.chart.scrollbarChart.zoomToIndexes(this.chartData.length - 2, this.chartData.length - 1)
         }
       },
-      fetchChartData(isUpdate = false) {
+      async fetchChartData(isUpdate = false) {
         this.chartLoading = true
         //proxyuUrl is done to avoid cross-origin error as it is directly called from javascript.
-        const baseURL = 'https://api.binance.com/api/v1/klines'
-        // const baseURL = 'http://127.0.0.1:8000/demo/'
-        fetch(`${baseURL}?symbol=${this.symbol}&interval=${this.interval}`).then(
-          function (response) {
-            if (response.status !== 200) {
-              console.log('Looks like there was a problem. Status Code: ' + response.status);
-              return;
-            }
-            response.json().then(function (data) {
-              this.chartData = data.map((val) => {
-                return {
-                  "date": new Date(val[0]),
-                  "open": parseFloat(val[1]),
-                  "high": parseFloat(val[2]),
-                  "low": parseFloat(val[3]),
-                  "close": parseFloat(val[4]),
-                  "volume": parseFloat(val[5]),
-                  "value": parseFloat(val[4])
-                }
-              })
-              if (isUpdate) {
-                this.chart.dataSets[0].dataProvider = this.chartData;
-                this.chart.validateData()
-              }
-              else {
-                this.showChart();
-              }
-              this.chartLoading = false;
-              this.zoomChart();
-            }.bind(this));
-          }.bind(this)
-        ).catch(function (err) {
-          this.chartLoading = false;
-          console.log('Fetch Error :-S', err);
-        });
-      },
-      updateTimeInterval(ti) {
-        this.interval = ti;
-        this.fetchChartData(true)
-      },
-      toCandleStickChart() {
-        this.chartType = 'cs';
-        const dataSet = this.chart.dataSets[0];
-        const panel = this.chart.panels[0];
-        dataSet.fieldMappings = [];
-        dataSet.fieldMappings.push({
-          fromField: "close",
-          toField: "close",
-        });
-        dataSet.fieldMappings.push({
-          fromField: "open",
-          toField: "open"
-        });
-        dataSet.fieldMappings.push({
-          fromField: "high",
-          toField: "high"
-        });
-        dataSet.fieldMappings.push({
-          fromField: "low",
-          toField: "low"
-        });
-        dataSet.fieldMappings.push({
-          fromField: "volume",
-          toField: "volume"
-        });
-        dataSet.fieldMappings.push({
-          fromField: "value",
-          toField: "value"
-        });
-        panel.stockGraphs[0] = {
-          id: "g1",
-          type: "candlestick",
-          balloonText: "Open:<b>[[open]]</b><br>Low:<b>[[low]]</b><br>High:<b>[[high]]</b><br>Close:<b>[[close]]</b>",
-          closeField: "close",
-          fillColors: "#00a928",
-          highField: "high",
-          lineColor: "#00a928",
-          lineAlpha: 1,
-          lowField: "low",
-          fillAlphas: 1,
-          negativeFillColors: "#db4c3c",
-          negativeLineColor: "#db4c3c",
-          openField: "open",
-          valueField: "value",
-          proCandlesticks: false,
-          useDataSetColors: false
-        };
-        panel.stockLegend.valueTextRegular = "[[close]] ";
-        this.chart.validateNow()
-      },
-      toLineChart() {
-        this.chartType = 'lc';
-        const dataSet = this.chart.dataSets[0];
-        const panel = this.chart.panels[0];
-        dataSet.fieldMappings = [];
-        dataSet.fieldMappings.push({
-          fromField: "value",
-          toField: "value",
-        });
-        dataSet.fieldMappings.push({
-          fromField: "volume",
-          toField: "volume"
-        });
-        panel.stockGraphs[0] = {
-          id: "g1",
-          type: "line",
-          valueField: "value",
-          lineThickness: 1,
-          useDataSetColors: false,
-          lineColor: "#00a928",
-          showBalloon: true,
-          balloonText: "<b>[[value]]</b>"
-        };
-        panel.stockLegend.periodValueTextRegular = "[[value.close]] ";
-        this.chart.validateNow()
+        const BASE_URL = 'https://api.binance.com/api/v1/klines'
+        const ML_API_URL = 'http://127.0.0.1:8000/api/v1/cryptoforecast'
+        const response = await fetch(`${BASE_URL}?symbol=${this.symbol}&interval=${this.interval}&limit=100`)
+        if (response.status !== 200) {
+          console.log('Looks like there was a problem. Status Code: ' + response.status);
+          return;
+        }
+        const data = await response.json()
+        this.chartData = data.map((val) => {
+          return {
+            "date": new Date(val[0]),
+            "time": val[0],
+            "open": parseFloat(val[1]),
+            "high": parseFloat(val[2]),
+            "low": parseFloat(val[3]),
+            "close": parseFloat(val[4]),
+            "volume": parseFloat(val[5]),
+            "value": parseFloat(val[4])
+          }
+        })
+        // Get last 20 elements in data
+        let lastElements = data.slice(Math.max(data.length - 5, 0))
+        let lastPrices = lastElements.map((val) => parseFloat(val[4]))
+        this.lastEpoch = lastElements[lastElements.length - 1][0]
+        const res = await fetch(`${ML_API_URL}?symbol=${this.symbol}&interval=${this.interval}&steps=20`, { 
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(lastPrices),
+        })
+
+        const resData = await res.json()
+
+        resData.predicted.map((val, index) => {
+          this.chartData.push({
+            "date": new Date(this.lastEpoch + (this.timeInterval * (index + 1))),
+            "time": this.lastEpoch + (this.timeInterval * (index + 1)),
+            "pred": parseFloat(val),
+          })
+        })
+        store.commit('UPDATE_DAY_SUGGEST', resData.suggestion)
+
+        if (isUpdate) {
+          this.chart.dataSets[0].dataProvider = this.chartData;
+          this.chart.validateData()
+        }
+        else {
+          this.showChart();
+        }
+        this.chartLoading = false;
+        this.zoomChart();
       },
       showChart() {
         this.chart = window.AmCharts.makeChart("chartdivday", {
           "type": "stock",
           "theme": "light",
-          "dataDateFormat": "YYYY-MM-DD HH",
+          "dataDateFormat": "YYYY-MM-DD",
           "mouseWheelZoomEnabled": true,
           "pathToImages": "http://cdn.amcharts.com/lib/3/images/",
           "categoryAxesSettings": {
-            "minPeriod": "hh"
+            "minPeriod": "DD"
           },
           "dataSets": [{
             "fieldMappings": [{
-              "fromField": "open",
-              "toField": "open"
-            }, {
-              "fromField": "close",
-              "toField": "close"
-            }, {
-              "fromField": "high",
-              "toField": "high"
-            }, {
-              "fromField": "low",
-              "toField": "low"
-            }, {
-              "fromField": "volume",
-              "toField": "volume"
-            }, {
               "fromField": "value",
               "toField": "value"
             }],
+            "title": this.symbol,
+            // "color": "#7f8da9",
+            "dataProvider": this.chartData,
+            "categoryField": "date",
+            // "compared": true
+          },{
+            "fieldMappings": [{
+              "fromField": "pred",
+              "toField": "pred"
+            }],
+            "title": "Predicted",
             "color": "#7f8da9",
             "dataProvider": this.chartData,
-            "title": this.symbol,
-            "categoryField": "date"
+            "categoryField": "date",
+            "compared": true
           }],
           "panels": [
             {
               "title": "Price by the day",
+              "recalculateToPercents": "never",
               "showCategoryAxis": true,
               "percentHeight": 70,
               "valueAxes": [{
                 "id": "v1",
-                "dashLength": 5
+                "dashLength": 3
               }],
 
               "categoryAxis": {
                 "dashLength": 5,
-                "parseDates": true
+                "parseDates": true,
+                "guides": [{
+                  "date": new Date(this.lastEpoch + this.timeInterval),
+                  "lineAlpha": 1,
+                  "label": "Now",
+                  "inside": true,
+                  "lineThickness": 1,
+                  "lineColor": "#ff8800"
+                }],
               },
 
               "stockGraphs": [{
-                "type": "line",
                 "id": "g1",
+                "type": "line",
                 "valueField": "value",
-                "lineColor": "#00a928",
-                "showBalloon": true,
                 "lineThickness": 1,
                 "useDataSetColors": false,
-                "useNegativeColorIfDown": false,
-                "balloonText": "<b>[[value]]</b>",
-              },
-              ],
+                "lineColor": "#00a928",
+                "connect": false,
+                "showBalloon": true,
+                "balloonText": "<b>[[value]]</b>"
+              },{
+                "id": "g2",
+                "type": "line",
+                "valueField": "pred",
+                "lineThickness": 3,
+                "useDataSetColors": false,
+                // "lineColor": "#00a928",
+                "showBalloon": true,
+                "balloonText": "<b>[[pred]]</b>",
+                "comparable": true,
+                "compareField": "pred"
+              }],
 
               "stockLegend": {
                 "valueTextRegular": undefined,
-                "periodValueTextComparing": "[[percents.value.close]]%",
-                // "periodValueTextRegular": "[[value.close]]",
+                "periodValueTextComparing": "[[percents.value.close]]%"
               }
-            }
+            },
           ],
           "chartScrollbarSettings": {
             "graph": "g1",
