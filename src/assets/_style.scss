@@ -58,6 +58,7 @@ button:focus {
 }
 input.qty.form-control {
   text-align: center;
+  width: 150px;
 }
 .add-btn {
   width:30px;
@@ -276,7 +277,7 @@ input.qty.form-control {
 
 // Chart Panel
 .chart-panel {
-  height: 412px;
+  height: 320px;
 }
 .chart-bar {
   height: 45px;

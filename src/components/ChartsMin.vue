@@ -176,7 +176,7 @@
           }],
           "panels": [
             {
-              "title": "Price by the minute",
+              "title": "Price by the min",
               "recalculateToPercents": "never",
               "showCategoryAxis": true,
               "percentHeight": 70,

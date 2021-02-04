@@ -14,32 +14,57 @@
                     </div>
                 </div>
                 <div class="row">
-                  <div class="col-lg-2 col-md-4">
-                    <b-input-group>
-                      <b-form-input placeholder="Amount" class="qty" type="number" v-model="buyQty" min="0.00"></b-form-input>
-                      <b-input-group-append>
-                        <b-button variant="success" @click="orderBuy(buyQty)">Buy</b-button>
-                      </b-input-group-append>
-                    </b-input-group>
+                  <div class="col-lg-4 col-md-4">
+                    <b-card
+                      border-variant="primary"
+                      header="Trade"
+                      header-bg-variant="secondary"
+                      header-text-variant="white"
+                      align="center"
+                    >
+                      <b-card-text>
+                        <div class="mb-2">
+                          <label class="mr-sm-2" for="order-qty">Quantity:</label>
+                          <b-form-input class="qty" id="order-qty" placeholder="Amount" type="number" v-model="orderQty" min="0.00"></b-form-input>
+                        </div>
+                        <div class="mt-2">
+                          <b-button class="mr-5" variant="success" @click="placeOrder(orderQty, 'buy')">B u y</b-button>
+                          <b-button class="ml-5" variant="danger" @click="placeOrder(orderQty, 'sell')">S e l l</b-button>
+                        </div>
+                      </b-card-text>
+                    </b-card>
                   </div>
-                  <div class="col-lg-2 col-md-4">
-                    <b-input-group>
-                      <b-form-input placeholder="Amount" class="qty" type="number" v-model="sellQty" min="0.00"></b-form-input>
-                      <b-input-group-append>
-                        <b-button variant="danger" @click="orderSell(sellQty)">Sell</b-button>
-                      </b-input-group-append>
-                    </b-input-group>
+                  <div class="col-lg-4 col-md-4">
+                    <b-card
+                      border-variant="primary"
+                      header="Suggestion"
+                      header-bg-variant="info"
+                      header-text-variant="white"
+                      align="center"
+                    >
+                      <b-card-text>
+                        <h5>{{ suggestionMin }} for short term</h5>
+                        <h5>{{ suggestionHour }} for mid term</h5>
+                        <h5>{{ suggestionDay }} for long term</h5>
+                      </b-card-text>
+                    </b-card>
                   </div>
-                  <div class="col-lg-4 col-md-6">
-                    <h4>Suggestion For Minute: {{ suggestionMin }}</h4>
-                    <h4>Suggestion For Hour: {{ suggestionHour }}</h4>
-                    <h4>Suggestion For Day: {{ suggestionDay }}</h4>
-                  </div>
-                  <div class="col-lg-4 col-md-6">
-                    <h4>Profit: {{ Math.round(profit.history * 100) / 100 }} {{ quote }}</h4>
-                    <h4 v-for="(item, index) in balances" :key="index">
-                      {{ item.asset }}: {{ Math.round(item.free * 100) / 100 }}
-                    </h4>
+                  <div class="col-lg-4 col-md-4">
+                    <b-card
+                      border-variant="primary"
+                      header="Account"
+                      header-bg-variant="primary"
+                      header-text-variant="white"
+                      align="center"
+                    >
+                      <b-card-text>
+                        <!-- <h5>Profit: {{ Math.round(profit.history * 100) / 100 }} {{ quote }}</h5> -->
+                        <h5>Profit: {{ Math.round(profitPercent * 1000) / 1000 }}%</h5>
+                        <h5 v-for="(item, index) in balances" :key="index">
+                          {{ item.asset }}: {{ Math.round(item.free * 100) / 100 }}
+                        </h5>
+                      </b-card-text>
+                    </b-card>
                   </div>
                 </div>
             </div>
@@ -65,12 +90,13 @@
         profit: { history: 0 },
         asset: '',
         quote: '',
+        initialBalance: [],
+        profitPercent: 0,
         balances: [],
         suggestMin: '',
         suggestHour: '',
         suggestDay: '',
-        buyQty: 0,
-        sellQty: 0,
+        orderQty: 0,
       };
     },
     filters: {
@@ -98,7 +124,22 @@
         console.log('ticker', this.$store.getters.getTickerById(this.symbol))
         return this.$store.getters.getTickerById(this.symbol) || {}
       },
-      ...mapState(['suggestionDay', 'suggestionHour', 'suggestionMin'])
+      ...mapState(['suggestionDay', 'suggestionHour', 'suggestionMin', 'tickers'])
+    },
+    watch: {
+      tickers: {
+        immediate: true,
+        deep: true,
+        handler: function (value) {
+          const currentTick = value[this.symbol]
+          const price = currentTick ? currentTick['price'] : undefined
+          if(price && this.balances.length && this.initialBalance.length){
+            const current_networth = parseFloat(this.balances[0].free) * price + parseFloat(this.balances[1].free)
+            const initial_networth = this.initialBalance[0] * price + this.initialBalance[1]
+            this.profitPercent = (current_networth - initial_networth) / initial_networth * 100
+          }
+        }
+      }
     },
     mounted() {
       subscribeSymbol(this.symbol);
@@ -115,10 +156,10 @@
           return;
         }
         const profitData = await response.json()
-        console.log('Profit: ', profitData)
         this.profit = profitData
         this.asset = profitData.coins[0]
         this.quote = profitData.coins[1]
+        this.initialBalance = profitData.initial
       },
       async fetchAccountData() {
         let response = await fetch(`${this.baseURL}/bnaccount`)
@@ -127,7 +168,6 @@
           return;
         }
         const acctData = await response.json()
-        console.log('Account: ', acctData)
         if (this.balances.length) this.balances = []
         acctData.balances.map( item => {
           if ( item.asset === this.asset || item.asset === this.quote ) {
@@ -135,70 +175,35 @@
           }
         })
       },
-      async orderBuy(qty) {
-        console.log('Buy Qty', qty)
-        const response = await fetch(this.baseURL + '/buyorder', {
-           method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({crypto: this.symbol, quantity: qty }),
-        })
-        if (response.status !== 200) {
-          console.log('Looks like there was a problem. Status Code: ' + response.status);
-          return;
-        }
-        const data = await response.json()
-        console.log('Order: ', data)
-        await this.fetchAccountData()
-        await this.fetchProfitData()
-
-      },
-      async orderSell(qty) {
-        console.log('Sell Qty', qty)
-        const response = await fetch(this.baseURL + '/sellorder', {
-           method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({crypto: this.symbol, quantity: qty }),
-        })
-        if (response.status !== 200) {
-          console.log('Looks like there was a problem. Status Code: ' + response.status);
-          return;
-        }
-        const data = await response.json()
-        console.log('Order: ', data)
-        await this.fetchAccountData()
-        await this.fetchProfitData()
-      },
-      checkFormValidity() {
-        const valid = this.$refs.form.checkValidity()
-        this.nameState = valid
-        return valid
-      },
-      resetModal() {
-        this.name = ''
-        this.nameState = null
-      },
-      handleOk(bvModalEvt) {
-        // Prevent modal from closing
-        bvModalEvt.preventDefault()
-        // Trigger submit handler
-        this.handleSubmit()
-      },
-      handleSubmit() {
-        // Exit when the form isn't valid
-        if (!this.checkFormValidity()) {
+      async placeOrder(qty, type) {
+        console.log('Place order:', qty, type)
+        if(!qty) return
+        let api_url;
+        if (type == 'buy') {
+          api_url = this.baseURL + '/buyorder'
+        } else if (type == 'sell') {
+          api_url = this.baseURL + '/sellorder'
+        } else {
           return
         }
-        // Hide the modal manually
-        this.$nextTick(() => {
-          this.$bvModal.hide('modal-buycoin')
+        const response = await fetch(api_url, {
+           method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({crypto: this.symbol, quantity: qty }),
         })
-      }
+        if (response.status !== 200) {
+          console.log('Looks like there was a problem. Status Code: ' + response.status);
+          return;
+        }
+        const data = await response.json()
+        console.log('Order detail', data)
+        await this.fetchAccountData()
+        await this.fetchProfitData()
+        this.orderQty = 0
+      },
     }
   }
 </script>
