@@ -15,6 +15,7 @@ import "amstock3/amcharts/amstock";
 import "amcharts3/amcharts/xy";
 import { mapState } from "vuex";
 import store from "../store";
+import { BASEURL, ML_API_URL } from "../constants"
 
 export default {
   name: "charts-min",
@@ -95,11 +96,8 @@ export default {
     },
     async fetchChartData(isUpdate = false) {
       this.chartLoading = true;
-      //proxyuUrl is done to avoid cross-origin error as it is directly called from javascript.
-      const BASE_URL = "https://api.binance.com/api/v1/klines";
-      const ML_API_URL = "http://127.0.0.1:8000/api/v1/cryptoforecast";
       const response = await fetch(
-        `${BASE_URL}?symbol=${this.symbol}&interval=${this.interval}&limit=100`
+        `${BASEURL}?symbol=${this.symbol}&interval=${this.interval}&limit=100`
       );
       if (response.status !== 200) {
         console.log(
